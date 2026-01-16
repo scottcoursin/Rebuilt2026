@@ -32,7 +32,7 @@ public class RobotContainer {
     private double MaxSpeed = 1.0 * TunerConstants.kSpeedAt12Volts.in(MetersPerSecond); // kSpeedAt12Volts desired top speed
     private double MaxAngularRate = RotationsPerSecond.of(0.75).in(RadiansPerSecond); // 3/4 of a rotation per second max angular velocity
 
-    private QuestNav m_questNav;
+    private QuestNav m_questNav = new QuestNav();
 
     /* Setting up bindings for necessary control of the swerve drive platform */
     private final SwerveRequest.FieldCentric drive = new SwerveRequest.FieldCentric()
@@ -102,7 +102,7 @@ public class RobotContainer {
         // ));
 
         joystick.b().onTrue(m_resetQuest);
-        joystick.x().onTrue(DriveCommands.driveToPoseCommand(drivetrain, new Pose2d(0.0, 0.0, Rotation2d.kZero)));
+        joystick.x().onTrue(DriveCommands.driveToPoseCommand(drivetrain, new Pose2d(5.7, 0.5, Rotation2d.kZero)));
 
         // Run SysId routines when holding back/start and X/Y.
         // Note that each routine should be run exactly once in a single log.
@@ -137,7 +137,7 @@ public class RobotContainer {
     }
 
     public void periodic() {
-        isinBump = drivetrain.getState().Pose.getX() > 1.0;
+        isinBump = drivetrain.getState().Pose.getX() > 1.0 && drivetrain.getState().Pose.getX() < 4.0;
     }
 
     InstantCommand m_resetQuest = new InstantCommand(() -> m_questNav.setPose(new Pose3d(0.0, 0.0, 0.0, new Rotation3d(0.0, 0.0, 0.0))));
