@@ -365,7 +365,7 @@ public class LED implements Subsystem {
     private EmptyAnimation m_emptyAnimation = new EmptyAnimation(0);
 
 
-    private RGBWColor m_defaultColor;
+    private RGBWColor m_defaultColor = c_defaultColor;
     private RGBWColor m_currentColor = c_colorBlack;
     private ECurrentAction m_currentAction;
 
