@@ -344,4 +344,20 @@ public class Drive extends TunerSwerveDrivetrain implements Subsystem {
     public Optional<Pose2d> samplePoseAt(double timestampSeconds) {
         return super.samplePoseAt(Utils.fpgaToCurrentTime(timestampSeconds));
     }
+
+    public Pose2d getPose(){
+        return getState().Pose;
+    }
+
+    public double getRotationDegrees(){
+        return getState().Pose.getRotation().getDegrees();
+    }
+
+    public double getFieldX(){
+        return getState().Pose.getX();
+    }
+
+    public double getFieldY(){
+        return getState().Pose.getY();
+    }
 }

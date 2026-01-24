@@ -6,12 +6,19 @@ package frc.robot;
 
 import com.ctre.phoenix6.HootAutoReplay;
 
+import static edu.wpi.first.units.Units.*;
+import edu.wpi.first.units.measure.Current;
+import edu.wpi.first.units.measure.LinearVelocity;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 
 public class Robot extends TimedRobot {
     private Command m_autonomousCommand;
+
+    private static final Current kSlipCurrent = Amps.of(120);
+
+    LinearVelocity kMaxSpeed = MetersPerSecond.of(2.5);
 
     private final RobotContainer m_robotContainer;
 

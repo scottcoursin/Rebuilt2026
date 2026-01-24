@@ -15,6 +15,8 @@ import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Transform2d;
+import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -40,6 +42,8 @@ public class RobotContainer {
             0.035 // Trust down to 2 degrees rotational
         );
 
+    private Command driveToPoseCommand;
+
     /* Setting up bindings for necessary control of the swerve drive platform */
     private final SwerveRequest.FieldCentric drive = new SwerveRequest.FieldCentric()
             .withDeadband(MaxSpeed * 0.1).withRotationalDeadband(MaxAngularRate * 0.1) // Add a 10% deadband
@@ -49,6 +53,11 @@ public class RobotContainer {
             .withDeadband(MaxSpeed * 0.1).withRotationalDeadband(MaxAngularRate* 0.1)
             .withDriveRequestType(DriveRequestType.OpenLoopVoltage)
             .withHeadingPID(4.0, 0.0, 0.0);
+    
+    private final SwerveRequest.RobotCentricFacingAngle driveAngleRobot = new SwerveRequest.RobotCentricFacingAngle()
+        .withDeadband(MaxSpeed * 0.1).withRotationalDeadband(MaxAngularRate* 0.1)
+        .withDriveRequestType(DriveRequestType.OpenLoopVoltage)
+        .withHeadingPID(4.0, 0.0, 0.0);
     // private final SwerveRequest.SwerveDriveBrake brake = new SwerveRequest.SwerveDriveBrake();
     // private final SwerveRequest.PointWheelsAt point = new SwerveRequest.PointWheelsAt();
 
@@ -61,11 +70,21 @@ public class RobotContainer {
 
     private boolean isinBump = false;
     private boolean isinTransition = false;
+    private boolean isTrackingFuel = false;
+    private boolean slowmode;
     private final double X_START_BUMP = 1.0;
     private final double X_STOP_BUMP = 4.0;
     private final double TRANSITION_OFFSET = 0.25;
     private final double X_START_TRANSITION = X_START_BUMP - TRANSITION_OFFSET;
     private final double X_STOP_TRANSITION = X_STOP_BUMP + TRANSITION_OFFSET;
+    private double rotFuelTracking = 0.0;
+    private double robotX = 0.0;
+    private double robotY = 0.0;
+
+    private double[] tarPose;
+    private Transform2d targPose3d;
+    private double tarX = 0.0;
+    private double tarY = 0.0;
 
     public final SendableChooser<Command> autoChooser;
 
@@ -97,6 +116,13 @@ public class RobotContainer {
                                      .withVelocityY(-joystick.getLeftX() * MaxSpeed)
                                      .withTargetDirection(targetRot);
                 }
+                else if (isTrackingFuel) {
+                    Rotation2d rot = drivetrain.getState().Pose.getRotation();
+                    Rotation2d targetRot = new Rotation2d((rot.getDegrees() - rotFuelTracking) / 180 * Math.PI);
+                    return driveAngleRobot.withVelocityX(-joystick.getLeftY() * MaxSpeed)
+                                     .withVelocityY(0.0)
+                                     .withTargetDirection(targetRot);
+                }
                 else{
                     return drive.withVelocityX(-joystick.getLeftY() * MaxSpeed) // Drive forward with negative Y (forward)
                                 .withVelocityY(-joystick.getLeftX() * MaxSpeed) // Drive left with negative X (left)
@@ -112,9 +138,14 @@ public class RobotContainer {
             drivetrain.applyRequest(() -> idle).ignoringDisable(true)
         );
 
+        joystick.a().onTrue(m_trackFuel);
+        joystick.a().onFalse(m_trackFuel);
         joystick.b().onTrue(m_resetQuest);
-        joystick.x().onTrue(DriveCommands.driveToPoseCommand(drivetrain, new Pose2d(5.7, 0.5, Rotation2d.kZero)));
-        joystick.y().onTrue(DriveCommands.driveToPoseCommand(drivetrain, Pose2d.kZero));
+        joystick.x().onTrue(DriveCommands.driveToPoseCommand(drivetrain,
+            () -> drivetrain.getPose().transformBy(vision.photonGetTargetPose())));
+        joystick.y().onTrue(DriveCommands.driveToPoseCommand(drivetrain, () -> Pose2d.kZero));
+
+        joystick.start().onTrue(m_slowmode);
 
         // Run SysId routines when holding back/start and X/Y.
         // Note that each routine should be run exactly once in a single log.
@@ -137,12 +168,52 @@ public class RobotContainer {
         if (vision.isTracking()){
             drivetrain.addVisionMeasurement(vision.getRobotPose(), vision.getTimestamp(), QUESTNAV_STD_DEVS);
         }
+
         double x = drivetrain.getState().Pose.getX();
         // isinBump = x > X_START_BUMP && x < X_STOP_BUMP;
         isinBump = false;
         isinTransition = false;
         // isinTransition = (x > X_START_TRANSITION && x < X_START_BUMP) || (x > X_STOP_BUMP && x < X_STOP_TRANSITION);
+
+        if (vision.photonIsTrackingFuel()) {
+            rotFuelTracking = vision.photonGetFuelAngle();
+            targPose3d = vision.photonGetTargetPose();
+            tarX = targPose3d.getX();
+            tarY = targPose3d.getY();
+        }
+        // else if (vision.isTrackingFuel()) {
+        //     rotFuelTracking = vision.getFuelAngle();
+        //     tarPose = vision.getTargetPose();
+        //     tarX = tarPose[0];
+        //     tarY = tarPose[1];
+        // }
+
+        robotX = drivetrain.getFieldX();
+        robotY = drivetrain.getFieldY();
+
+        SmartDashboard.putNumber("xPose", robotX);
+        SmartDashboard.putNumber("yPose", robotY);
+
+        SmartDashboard.putBoolean("IsInBump", isinBump);
+        SmartDashboard.putBoolean("IsInTransition", isinTransition);
+        SmartDashboard.putBoolean("IsTrackingFuel", isTrackingFuel);
+
+        SmartDashboard.putNumber("TargetX", tarX);
+        SmartDashboard.putNumber("TargetY", tarY);
+
+        SmartDashboard.putNumber("PhotonYaw", rotFuelTracking);
     }
 
     InstantCommand m_resetQuest = new InstantCommand(() -> vision.setQuestPose(Pose3d.kZero));
+    InstantCommand m_trackFuel = new InstantCommand(() -> isTrackingFuel = !isTrackingFuel);
+    InstantCommand m_slowmode = new InstantCommand(() -> {
+        slowmode = !slowmode;
+        if (slowmode){
+            MaxSpeed = 0.3 * TunerConstants.kSpeedAt12Volts.in(MetersPerSecond); // kSpeedAt12Volts desired top speed = 
+        }
+        else {
+            MaxSpeed = 1.0 * TunerConstants.kSpeedAt12Volts.in(MetersPerSecond); // kSpeedAt12Volts desired top speed;=
+        }
+    });
+    
 }
