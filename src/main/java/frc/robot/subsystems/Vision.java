@@ -1,6 +1,8 @@
 package frc.robot.subsystems;
 
 import edu.wpi.first.math.geometry.Pose3d;
+import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform2d;
 
 import java.util.List;
@@ -28,11 +30,15 @@ public class Vision extends SubsystemBase {
     private PhotonPipelineResult m_photonResult;
     private double m_timestamp = 0.0;
     private Pose2d m_robotPose = Pose2d.kZero;
+    private Pose2d m_photonPose = Pose2d.kZero;
     // private Field2d m_field = new Field2d();
     private static final String LIMELIGHT_NAME = "limelight-fuel";
 
+    private final Transform2d ROBOT_TO_QUEST = new Transform2d(0.19, 0.0, Rotation2d.kZero);
+
     public double getTimestamp() { return m_timestamp; }
-    public Pose2d getRobotPose() { return m_robotPose; }
+    public Pose2d getQuestRobotPose() { return m_robotPose.transformBy(ROBOT_TO_QUEST.inverse()); }
+    public Pose3d getLLRobotPose() {return LimelightHelpers.getBotPose3d_wpiBlue(LIMELIGHT_NAME); }
     public boolean isTracking()  { return m_questNav.isTracking(); }
     
     public Vision() {
@@ -78,6 +84,9 @@ public class Vision extends SubsystemBase {
 
         //m_photonResults = m_photonCamera.getAllUnreadResults();
         m_photonResult = m_photonCamera.getLatestResult();
+        m_photonPose.transformBy(photonGetTargetPose());
+        SmartDashboard.putNumber("PhotonPoseX", m_photonPose.getX());
+        SmartDashboard.putNumber("PhotonPoseY", m_photonPose.getY());
     }
 
     public void setQuestPose(Pose3d pose) {
@@ -133,6 +142,10 @@ public class Vision extends SubsystemBase {
             return m_photonResult.getBestTarget().pitch;
         }
         return 0.0;
+    }
+
+    public void updateQuestPose(){
+        m_questNav.setPose(getLLRobotPose());
     }
 
     // public boolean photonIsTrackingFuel() {

@@ -89,6 +89,9 @@ public class RobotContainer {
     private double tarX = 0.0;
     private double tarY = 0.0;
 
+    enum JogState{noJog, leftJog, rightJog};
+    private JogState jogState = JogState.noJog;
+
     public final SendableChooser<Command> autoChooser;
 
     public RobotContainer() {
@@ -127,6 +130,13 @@ public class RobotContainer {
                                      .withVelocityY(0.0)
                                      .withTargetDirection(targetRot);
                 }
+                else if (jogState != JogState.noJog) {
+                    double angle = 0.5; // Half a radian per sec
+                    angle *= jogState == JogState.rightJog ? 1.0 : -1.0;
+                    return drive.withVelocityX(0.0)
+                                .withVelocityY(0.0)
+                                .withRotationalRate(angle);
+                }
                 else{
                     return drive.withVelocityX(-joystick.getLeftY() * MaxSpeed) // Drive forward with negative Y (forward)
                                 .withVelocityY(-joystick.getLeftX() * MaxSpeed) // Drive left with negative X (left)
@@ -147,7 +157,7 @@ public class RobotContainer {
         joystick.b().onTrue(m_resetQuest);
         joystick.x().onTrue(DriveCommands.driveToPoseCommand(drivetrain,
             () -> drivetrain.getPose().transformBy(vision.photonGetTargetPose())));
-        joystick.y().onTrue(DriveCommands.driveToPoseCommand(drivetrain, () -> Pose2d.kZero));
+        joystick.y().onTrue(DriveCommands.driveToPoseCommand(drivetrain, () -> new Pose2d(13.01, 5.44, new Rotation2d( -3 * Math.PI / 4))));
 
         joystick.start().onTrue(m_slowmode);
 
@@ -161,6 +171,11 @@ public class RobotContainer {
         // Reset the field-centric heading on left bumper press.
         joystick.leftBumper().onTrue(drivetrain.runOnce(drivetrain::seedFieldCentric));
 
+        joystick.leftTrigger().onTrue(m_jogLeft);
+        joystick.leftTrigger().onFalse(m_jogStop);
+        joystick.rightTrigger().onTrue(m_jogRight);
+        joystick.rightTrigger().onFalse(m_jogStop);
+
         drivetrain.registerTelemetry(logger::telemeterize);
     }
 
@@ -170,7 +185,7 @@ public class RobotContainer {
 
     public void periodic() {
         if (vision.isTracking()){
-            drivetrain.addVisionMeasurement(vision.getRobotPose(), vision.getTimestamp(), QUESTNAV_STD_DEVS);
+            drivetrain.addVisionMeasurement(vision.getQuestRobotPose(), vision.getTimestamp(), QUESTNAV_STD_DEVS);
         }
 
         m_field.setRobotPose(drivetrain.getPose());
@@ -215,7 +230,7 @@ public class RobotContainer {
         SmartDashboard.putNumber("ObjectY", getDistanceYToFuel(vision.getFuelAngle()));
     }
 
-    InstantCommand m_resetQuest = new InstantCommand(() -> vision.setQuestPose(Pose3d.kZero));
+    InstantCommand m_resetQuest = new InstantCommand(() -> vision.updateQuestPose());
     InstantCommand m_trackFuel = new InstantCommand(() -> isTrackingFuel = !isTrackingFuel);
     InstantCommand m_slowmode = new InstantCommand(() -> {
         slowmode = !slowmode;
@@ -227,6 +242,10 @@ public class RobotContainer {
         }
     });
     
+    InstantCommand m_jogLeft = new InstantCommand(() -> jogState = JogState.leftJog);
+    InstantCommand m_jogRight = new InstantCommand(() -> jogState = JogState.rightJog);
+    InstantCommand m_jogStop = new InstantCommand(() -> jogState = JogState.noJog);
+
     public double getDistanceXToFuel(double angle){
         return -0.28 / Math.tan(angle * Math.PI / 180.0); // 0.28 is height from the floor to the camera in meters
     }
