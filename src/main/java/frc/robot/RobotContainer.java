@@ -49,6 +49,7 @@ public class RobotContainer {
     private Pose2d startAndClimbStart = new Pose2d(13.71, 4.0, new Rotation2d(Math.PI));
     private Pose2d feederOutpostSideStart = new Pose2d(13.01, 5.44, new Rotation2d( -3 * Math.PI / 4));
     private Pose2d feederDepotSideStart = new Pose2d(13.01, 2.66, new Rotation2d( 3 * Math.PI / 4));
+    private Pose2d outpostToDepot = new Pose2d(13.06, 4.03, Rotation2d.k180deg);
     private Pose2d autoStartPoint = Pose2d.kZero;
 
     /* Setting up bindings for necessary control of the swerve drive platform */
@@ -112,7 +113,7 @@ public class RobotContainer {
         drivetrain.setDefaultCommand(
             drivetrain.applyRequest(() -> {
                 if (isinBump){
-                    Rotation2d rot = drivetrain.getState().Pose.getRotation();
+                    Rotation2d rot = drivetrain.getPigeon2().getRotation2d(); // DO NOT GET DRIVETRAIN STATE ROTATION! Quest messes with it. Get pigeon directly
                     double rotDouble = Math.round((rot.getDegrees() - 45.0) / 90.0) * 90.0 + 45.0; // Rounds to the nearest 45 degrees
                     Rotation2d targetRot = new Rotation2d(rotDouble / 180 * Math.PI);
                     return driveAngle.withVelocityX(-joystick.getLeftY() * MaxSpeed * 0.3)
@@ -216,6 +217,12 @@ public class RobotContainer {
             System.out.println("getDriveToPose() selectedAuto = " + selectedAuto + " X " + startAndClimbStart.getX() + " Y " +startAndClimbStart.getY());
             return startAndClimbStart;
         }
+        else if (selectedAuto.equalsIgnoreCase("OutpostToDepot")) {
+            SmartDashboard.putNumber("autoSACX", outpostToDepot.getX());
+            SmartDashboard.putNumber("autoSACY", outpostToDepot.getY());
+            System.out.println("getDriveToPose() selectedAuto = " + selectedAuto + " X " + outpostToDepot.getX() + " Y " +outpostToDepot.getY());
+            return outpostToDepot;
+        }
 
         System.out.println("getDriveToPose() returning Pose2d.kZero selectedAuto = " + selectedAuto);
 
@@ -235,9 +242,9 @@ public class RobotContainer {
         // m_field.getObject("Fuel").setPose(drivetrain.getFieldX() + getDistanceXToFuel(vision.photonGetFuelPitch()), drivetrain.getFieldY() + getDistanceYToFuel(vision.getFuelAngle()), Rotation2d.kZero);
         SmartDashboard.putData("RobotPose", m_field);
 
-        double x = drivetrain.getState().Pose.getX();
-        // isinBump = x > X_START_BUMP && x < X_STOP_BUMP;
-        isinBump = false;
+        double x = drivetrain.getFieldX();
+        double y = drivetrain.getFieldY();
+        isinBump = x > 11.0 && x < 13.0 && y > 5.1 && y < 5.9;
         isinTransition = false;
         // isinTransition = (x > X_START_TRANSITION && x < X_START_BUMP) || (x > X_STOP_BUMP && x < X_STOP_TRANSITION);
 
