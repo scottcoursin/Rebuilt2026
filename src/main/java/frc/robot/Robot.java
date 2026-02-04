@@ -10,11 +10,17 @@ import static edu.wpi.first.units.Units.*;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.LinearVelocity;
 import edu.wpi.first.wpilibj.TimedRobot;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
+import java.util.Timer;
 
 public class Robot extends TimedRobot {
     private Command m_autonomousCommand;
+
+    private boolean m_questReset = false;
+    private boolean inPosition = false;
+    private int count = 0;
 
     private static final Current kSlipCurrent = Amps.of(120);
 
@@ -36,13 +42,36 @@ public class Robot extends TimedRobot {
         m_timeAndJoystickReplay.update();
         CommandScheduler.getInstance().run(); 
        m_robotContainer.periodic();
+
+       SmartDashboard.putBoolean("InPosition", inPosition);
     }
 
     @Override
     public void disabledInit() {}
 
     @Override
-    public void disabledPeriodic() {}
+    public void disabledPeriodic() {
+        if (count % 250 == 0){
+            count = 0;
+            m_questReset = false;
+        }
+
+        if (m_robotContainer.vision.isLLTracking() && !m_questReset && count % 251 == 0){
+            m_robotContainer.vision.setQuestPose(m_robotContainer.vision.getLLRobotPose());
+            m_questReset = true;
+        }
+
+        if (m_robotContainer.vision.getQuestRobotPose().getX() > 12.9 && m_robotContainer.vision.getQuestRobotPose().getX() < 13.1 && m_robotContainer.vision.getQuestRobotPose().getY() > 5.3 && m_robotContainer.vision.getQuestRobotPose().getY() < 5.6)
+        {
+            inPosition = true;
+        }
+        else
+        {
+            inPosition = false;
+        }
+
+        count++;
+    }
 
     @Override
     public void disabledExit() {}

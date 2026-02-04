@@ -113,9 +113,26 @@ public class RobotContainer {
         drivetrain.setDefaultCommand(
             drivetrain.applyRequest(() -> {
                 if (isinBump){
-                    Rotation2d rot = drivetrain.getPigeon2().getRotation2d(); // DO NOT GET DRIVETRAIN STATE ROTATION! Quest messes with it. Get pigeon directly
+                    Rotation2d rot = vision.getQuestRobotPose().getRotation(); // DO NOT GET DRIVETRAIN STATE ROTATION! Quest messes with it. Get pigeon directly
+                    SmartDashboard.putNumber("PigeonRotation", rot.getDegrees());
+                    SmartDashboard.putNumber("PoseRotation", drivetrain.getState().Pose.getRotation().getDegrees());
                     double rotDouble = Math.round((rot.getDegrees() - 45.0) / 90.0) * 90.0 + 45.0; // Rounds to the nearest 45 degrees
+                    // double rotDouble = Math.round((-rot.getDegrees()) / 45.0 + 45.0); // Rounds to the nearest 45 degrees
                     Rotation2d targetRot = new Rotation2d(rotDouble / 180 * Math.PI);
+                    // if (rot.getDegrees() > -180 && rot.getDegrees() < -90){
+                    //     targetRot = new Rotation2d(Math.PI * 3.0 / 4.0);
+                    // }
+                    // else if (rot.getDegrees() > -90 && rot.getDegrees() < 0){
+                    //     targetRot = new Rotation2d(-Math.PI / 4.0);
+                    // }
+                    // else if (rot.getDegrees() < 180 && rot.getDegrees() > 90){
+                    //     targetRot = new Rotation2d(Math.PI * 3.0 / 4.0);
+                    // }
+                    // else if (rot.getDegrees() < 90 && rot.getDegrees() > 0){
+                    //     targetRot = new Rotation2d(Math.PI / 4.0);
+                    // }
+
+                    SmartDashboard.putNumber("targetRot", targetRot.getDegrees());
                     return driveAngle.withVelocityX(-joystick.getLeftY() * MaxSpeed * 0.3)
                                      .withVelocityY(-joystick.getLeftX() * MaxSpeed * 0.3)
                                      .withTargetDirection(targetRot);

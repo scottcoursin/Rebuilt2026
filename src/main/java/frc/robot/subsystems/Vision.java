@@ -40,6 +40,7 @@ public class Vision extends SubsystemBase {
     public Pose2d getQuestRobotPose() { return m_robotPose.transformBy(ROBOT_TO_QUEST.inverse()); }
     public Pose3d getLLRobotPose() {return LimelightHelpers.getBotPose3d_wpiBlue(LIMELIGHT_NAME); }
     public boolean isTracking()  { return m_questNav.isTracking(); }
+    public boolean isLLTracking() { return LimelightHelpers.getTA(LIMELIGHT_NAME) != 0; }
     
     public Vision() {
     // SmartDashboard.putData("RobotPose", m_field);
