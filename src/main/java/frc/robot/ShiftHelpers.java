@@ -25,6 +25,8 @@ public class ShiftHelpers {
             return (int)(currentMatchTime - 55);
         } else if (currentMatchTime >= 30 && currentMatchTime <= 55) {
             return (int)(currentMatchTime - 30);
+        } else if (currentMatchTime == - 1){
+            return 0;
         } else {
             return (int)currentMatchTime;
         }

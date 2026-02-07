@@ -109,6 +109,10 @@ public class RobotContainer {
         SmartDashboard.putData("Auto Mode", autoChooser);
         SmartDashboard.putData("RobotPose", m_field);
         configureBindings();
+
+        SmartDashboard.putBoolean("Shift Ours?", ShiftHelpers.currentShiftIsYours());
+        SmartDashboard.putNumber("Shift Time", 0.0);
+        SmartDashboard.putNumber("Match Time", 0.0);
     }
 
     private void configureBindings() {
@@ -119,25 +123,10 @@ public class RobotContainer {
             drivetrain.applyRequest(() -> {
                 if (isinBump){
                     if (changeBump){
-                        rot = drivetrain.getState().Pose.getRotation(); // DO NOT GET DRIVETRAIN STATE ROTATION! Quest messes with it. Get pigeon directly
-                        changeBump = false;
+                        rot = drivetrain.getState().Pose.getRotation(); 
                     }
                     double rotDouble = Math.round((rot.getDegrees() - 45.0) / 90.0) * 90.0 + 45.0; // Rounds to the nearest 45 degrees
-                    // double rotDouble = Math.round((-rot.getDegrees()) / 45.0 + 45.0); // Rounds to the nearest 45 degrees
                     Rotation2d targetRot = new Rotation2d((rotDouble / 180 * Math.PI) + Math.PI);
-                    // if (rot.getDegrees() > -180 && rot.getDegrees() < -90){
-                    //     targetRot = new Rotation2d(Math.PI * 3.0 / 4.0);
-                    // }
-                    // else if (rot.getDegrees() > -90 && rot.getDegrees() < 0){
-                    //     targetRot = new Rotation2d(-Math.PI / 4.0);
-                    // }
-                    // else if (rot.getDegrees() < 180 && rot.getDegrees() > 90){
-                    //     targetRot = new Rotation2d(Math.PI * 3.0 / 4.0);
-                    // }
-                    // else if (rot.getDegrees() < 90 && rot.getDegrees() > 0){
-                    //     targetRot = new Rotation2d(Math.PI / 4.0);
-                    // }
-
                     SmartDashboard.putNumber("targetRot", targetRot.getDegrees());
                     return driveAngle.withVelocityX(-joystick.getLeftY() * MaxSpeed * 0.3)
                                      .withVelocityY(-joystick.getLeftX() * MaxSpeed * 0.3)
