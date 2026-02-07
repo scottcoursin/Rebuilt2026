@@ -49,6 +49,8 @@ public class RobotContainer {
     private Rotation2d rot = Rotation2d.kZero;
 
     Field2d m_field = new Field2d();
+    private Geofencing m_geofenceAlliBump = new Geofencing("AlliBump", 6.4912, 4.053, 1.589,5.17);
+    // private Geofencing m_geofenceAlliBump = new Geofencing("AlliBump", 5.9, 11.0, 5.1,13.0);
 
     private Command driveToPoseCommand;
     private Pose2d startAndClimbStart = new Pose2d(13.71, 4.0, new Rotation2d(Math.PI));
@@ -81,7 +83,6 @@ public class RobotContainer {
     public final Drive drivetrain = TunerConstants.createDrivetrain();
     public final Vision vision = new Vision();
 
-    private boolean isinBump = false;
     private boolean isinTransition = false;
     private boolean isTrackingFuel = false;
     private boolean slowmode;
@@ -121,9 +122,9 @@ public class RobotContainer {
     
         drivetrain.setDefaultCommand(
             drivetrain.applyRequest(() -> {
-                if (isinBump){
+                if (m_geofenceAlliBump.isInZone(drivetrain.getPose())){
                     if (changeBump){
-                        rot = drivetrain.getState().Pose.getRotation(); 
+                        rot = drivetrain.getPose().getRotation(); 
                     }
                     double rotDouble = Math.round((rot.getDegrees() - 45.0) / 90.0) * 90.0 + 45.0; // Rounds to the nearest 45 degrees
                     Rotation2d targetRot = new Rotation2d((rotDouble / 180 * Math.PI) + Math.PI);
@@ -133,7 +134,7 @@ public class RobotContainer {
                                      .withTargetDirection(targetRot);
                 }
                 else if (isinTransition) {
-                    Rotation2d rot = drivetrain.getState().Pose.getRotation();
+                    Rotation2d rot = drivetrain.getPose().getRotation();
                     double rotDouble = Math.round((rot.getDegrees()) / 90.0) * 90.0; // Rounds to the nearest 90 degrees
                     Rotation2d targetRot = new Rotation2d(rotDouble / 180 * Math.PI);
                     return driveAngle.withVelocityX(-joystick.getLeftY() * MaxSpeed)
@@ -141,7 +142,7 @@ public class RobotContainer {
                                      .withTargetDirection(targetRot);
                 }
                 else if (isTrackingFuel) {
-                    Rotation2d rot = drivetrain.getState().Pose.getRotation();
+                    Rotation2d rot = drivetrain.getPose().getRotation();
                     Rotation2d targetRot = new Rotation2d((rot.getDegrees() - rotFuelTracking) / 180 * Math.PI);
                     return driveAngleRobot.withVelocityX(-joystick.getLeftY() * MaxSpeed)
                                      .withVelocityY(0.0)
@@ -252,7 +253,7 @@ public class RobotContainer {
         }
 
         SmartDashboard.putNumber("PigeonRotation", drivetrain.getPigeon2().getYaw().getValueAsDouble());
-        SmartDashboard.putNumber("PoseRotation", drivetrain.getState().Pose.getRotation().getDegrees());
+        SmartDashboard.putNumber("PoseRotation", drivetrain.getPose().getRotation().getDegrees());
 
         SmartDashboard.putNumber("PigeonYaw", drivetrain.getPigeon2().getYaw().getValueAsDouble());
         SmartDashboard.putNumber("PigeonHeading", drivetrain.getPigeon2().getRotation2d().getDegrees());
@@ -261,9 +262,6 @@ public class RobotContainer {
         // m_field.getObject("Fuel").setPose(drivetrain.getFieldX() + getDistanceXToFuel(vision.photonGetFuelPitch()), drivetrain.getFieldY() + getDistanceYToFuel(vision.getFuelAngle()), Rotation2d.kZero);
         SmartDashboard.putData("RobotPose", m_field);
 
-        double x = drivetrain.getFieldX();
-        double y = drivetrain.getFieldY();
-        isinBump = x > 11.0 && x < 13.0 && y > 5.1 && y < 5.9;
         isinTransition = false;
         // isinTransition = (x > X_START_TRANSITION && x < X_START_BUMP) || (x > X_STOP_BUMP && x < X_STOP_TRANSITION);
 
@@ -286,7 +284,7 @@ public class RobotContainer {
         SmartDashboard.putNumber("xPose", robotX);
         SmartDashboard.putNumber("yPose", robotY);
 
-        SmartDashboard.putBoolean("IsInBump", isinBump);
+        SmartDashboard.putBoolean("IsInBump", m_geofenceAlliBump.isInZone(drivetrain.getPose()));
         SmartDashboard.putBoolean("IsInTransition", isinTransition);
         SmartDashboard.putBoolean("IsTrackingFuel", isTrackingFuel);
 
