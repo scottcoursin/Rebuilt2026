@@ -5,6 +5,8 @@ import static edu.wpi.first.units.Units.RotationsPerSecond;
 import static edu.wpi.first.units.Units.RotationsPerSecondPerSecond;
 import static edu.wpi.first.units.Units.Second;
 
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+
 import com.ctre.phoenix6.StatusCode;
 import com.ctre.phoenix6.configs.FeedbackConfigs;
 import com.ctre.phoenix6.configs.MotionMagicConfigs;
@@ -28,10 +30,17 @@ public class Intake extends SubsystemBase {
     private SparkMax m_deployMotor = new SparkMax(21, SparkMax.MotorType.kBrushless);
     private RelativeEncoder m_deployEnc = m_deployMotor.getEncoder();
     private SparkClosedLoopController m_deployClc = m_deployMotor.getClosedLoopController();
-    private final TalonFX m_rollerMotor = new TalonFX(11);
+    private final TalonFX m_rollerMotor1 = new TalonFX(11);
     private final MotionMagicVoltage m_mmReq = new MotionMagicVoltage(0);
-
+    //private SparkMax m_rollerMotor2 = new SparkMax(5, SparkMax.MotorType.kBrushless);
+    //private RelativeEncoder m_rollMotEnc1 = m_rollerMotor.getEncoder();
+    //private RelativeEncoder m_rollMotEnc2 = m_rollerMotor2.getEncoder();
+    private double m_minRPM = 20000;
+    private double m_maxRPM = 0.0;
+    private boolean m_isRunning = false;
+    
     public Intake() {
+        SmartDashboard.putNumber("intakeVoltage", 4.5);
         SparkMaxConfig config = new SparkMaxConfig();
         config.idleMode(SparkMaxConfig.IdleMode.kBrake)
             .inverted(false)
@@ -50,13 +59,28 @@ public class Intake extends SubsystemBase {
           .withMotionMagicJerk(RotationsPerSecondPerSecond.per(Second).of(100));
         
         Slot0Configs slot0 = cfg.Slot0;
+       SmartDashboard.putNumber("rollMot1RPM", m_rollerMotor1.getVelocity(true).getValueAsDouble());
+       //SmartDashboard.putNumber("rollMot2RPM", m_rollMotEnc2.getVelocity());
+       SmartDashboard.putNumber("maxRPM", m_maxRPM);
+       SmartDashboard.putNumber("minRPM", m_minRPM);
+        
+       SmartDashboard.putBoolean("isRunning", m_isRunning);
+       if (m_isRunning) { // doesn't work for min?
+            double rpm = m_rollerMotor1.getVelocity(true).getValueAsDouble();
+            if (rpm > m_maxRPM) {
+                m_maxRPM = rpm;
+            }
+            if (rpm < m_minRPM) {
+                m_minRPM = rpm;
+            }
+        }
         slot0.kP = 60;
         slot0.kI = 0;
         slot0.kD = 0.5;
 
         StatusCode status = StatusCode.StatusCodeNotInitialized;
         for (int i = 0; i < 5; ++i) {
-            status = m_rollerMotor.getConfigurator().apply(cfg);
+            status = m_rollerMotor1.getConfigurator().apply(cfg);
             if (status.isOK()) break;
         }
         if (!status.isOK()) {
@@ -64,6 +88,25 @@ public class Intake extends SubsystemBase {
         }
     }
 
+   @Override
+    public void periodic() {
+        double rpm = m_rollerMotor1.getVelocity(true).getValueAsDouble();
+        SmartDashboard.putNumber("rollMot1RPM", rpm);
+        //SmartDashboard.putNumber("rollMot2RPM", m_rollMotEnc2.getVelocity());
+        SmartDashboard.putNumber("maxRPM", m_maxRPM);
+        SmartDashboard.putNumber("minRPM", m_minRPM);
+        SmartDashboard.putBoolean("isRunning", m_isRunning);
+
+        if (m_isRunning) { // doesn't work for min?
+            if (rpm > m_maxRPM) {
+                m_maxRPM = rpm;
+            }
+            if (rpm < m_minRPM) {
+                m_minRPM = rpm;
+            }
+        }
+    }
+    
     public void deploy() {
         m_deployClc.setSetpoint(0, ControlType.kPosition); // TODO figure out position
     }
@@ -73,12 +116,23 @@ public class Intake extends SubsystemBase {
     }
 
     public void runIntake() {
-        m_rollerMotor.setControl(m_mmReq.withPosition(10).withSlot(0));
-        m_rollerMotor.setPosition(Rotations.of(1)); // TODO figure out rot/sec
+        //m_rollerMotor.setControl(m_mmReq.withPosition(10).withSlot(0));
+        m_isRunning = true;
+        m_minRPM = 20000.0;
+        m_maxRPM = 0.0;
+
+        double volt = SmartDashboard.getNumber("intakeVoltage", 6);
+        m_rollerMotor1.setVoltage(-volt);
+        //m_rollerMotor2.setVoltage(volt);
+        // m_rollerMotor.setPosition(Rotations.of(1)); // TODO figure out rot/sec
+        
     }
     
     public void stopIntake() {
-        m_rollerMotor.setControl(m_mmReq.withPosition(0).withSlot(0));
-        m_rollerMotor.setPosition(Rotations.of(0));
+        m_isRunning = false;
+        m_rollerMotor1.setVoltage(0);
+        //m_rollerMotor2.setVoltage(0);
+        //m_rollerMotor.setControl(m_mmReq.withPosition(0).withSlot(0));
+        //m_rollerMotor.setPosition(Rotations.of(0));
     }
 }
