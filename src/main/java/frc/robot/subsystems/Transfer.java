@@ -3,6 +3,8 @@ package frc.robot.subsystems;
 // import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
+import frc.robot.ConstantsCANIDS;
+
 import com.revrobotics.RelativeEncoder;
 import com.revrobotics.spark.ClosedLoopSlot;
 import com.revrobotics.spark.SparkClosedLoopController;
@@ -15,8 +17,8 @@ import com.revrobotics.ResetMode;
 import com.revrobotics.PersistMode;
 
 public class Transfer extends SubsystemBase {
-    private SparkMax m_spinDex = new SparkMax(31, SparkMax.MotorType.kBrushless);
-    private SparkFlex m_feederMot = new SparkFlex(32, SparkFlex.MotorType.kBrushless);
+    private SparkMax m_spinDex = new SparkMax(ConstantsCANIDS.kSpindexerID, SparkMax.MotorType.kBrushless);
+    private SparkFlex m_feederMot = new SparkFlex(ConstantsCANIDS.kFeederID, SparkFlex.MotorType.kBrushless);
     // private SparkClosedLoopController m_spinDexCtlr = m_spinDex.getClosedLoopController();
     private SparkClosedLoopController m_feederMotCtlr = m_feederMot.getClosedLoopController();
 
